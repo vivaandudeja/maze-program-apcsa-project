@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MazeProgram — Generate & Solve Mazes</title>
+    <meta name="description" content="A Java maze generator and solver built for AP Computer Science A. Free download for Windows.">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg-elevated: #161b22;
+            --bg-card: #1c2129;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #2ea043;
+            --accent-hover: #3fb950;
+            --accent-dim: rgba(46, 160, 67, 0.15);
+            --wall: #ffffff;
+            --path: #0d1117;
+            --solution: #2ea043;
+            --start: #58a6ff;
+            --end: #f85149;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 20% 0%, rgba(46, 160, 67, 0.08), transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(88, 166, 255, 0.05), transparent 50%);
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        nav {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav .logo {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        nav .logo .dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        nav a.github {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+        nav a.github:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #8b949e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero .tagline {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .hero .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+        .download-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(46, 160, 67, 0.3);
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(46, 160, 67, 0.4);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border-color: var(--border);
+        }
+        .btn-secondary:hover {
+            background: var(--bg-elevated);
+            border-color: var(--text-muted);
+        }
+        .meta {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .preview {
+            margin: 60px 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+        .preview h3 {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .preview .label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .preview .label .swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+        }
+
+        .maze-display {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .maze-display svg {
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            display: block;
+        }
+
+        .features {
+            padding: 60px 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .feature {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            transition: all 0.2s;
+        }
+        .feature:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .feature .icon {
+            font-size: 28px;
+            margin-bottom: 14px;
+        }
+        .feature h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .feature p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        section.info {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+        section.info h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        section.info .lead {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .info-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-card ol, .info-card ul {
+            padding-left: 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .info-card li { margin-bottom: 6px; }
+        .info-card code {
+            background: var(--bg);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--accent-hover);
+        }
+
+        .note {
+            margin-top: 24px;
+            padding: 16px 20px;
+            background: var(--accent-dim);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            font-size: 14px;
+            color: var(--text);
+        }
+        .note strong { color: var(--accent-hover); }
+
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 40px;
+        }
+        footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+        footer a:hover { color: var(--accent-hover); }
+
+        @media (max-width: 720px) {
+            .hero h1 { font-size: 38px; }
+            .preview { grid-template-columns: 1fr; padding: 24px; }
+            .features { grid-template-columns: 1fr; }
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="container">
+        <a href="#" class="logo">
+            <span class="dot"></span>
+            MazeProgram
+        </a>
+        <a href="https://github.com/vivaandudeja/maze-program-apcsa-project" class="github" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="container">
+        <h1>Generate &amp; Solve Mazes</h1>
+        <p class="tagline">A Java maze generator and solver built for AP Computer Science A.</p>
+        <p class="subtitle">Free &middot; Open Source &middot; No Java installation required</p>
+
+        <div class="download-row">
+            <a href="https://github.com/vivaandudeja/maze-program-apcsa-project/releases/latest/download/MazeProgram-1.0.0.exe" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download for Windows
+            </a>
+            <a href="https://github.com/vivaandudeja/maze-program-apcsa-project/releases/latest/download/MazeProgram-portable.zip" class="btn btn-secondary">
+                Portable ZIP (no install)
+            </a>
+        </div>
+        <p class="meta">Windows 10 / 11 &middot; ~40 MB &middot; v1.0.0</p>
+    </div>
+</header>
+
+<div class="container">
+    <div class="preview">
+        <div>
+            <h3>Generate</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
+                Random mazes built with recursive backtracking. Every run produces a different maze — export as a PNG with one click.
+            </p>
+            <div class="label"><span class="swatch" style="background: var(--wall);"></span> Wall</div>
+            <div class="label"><span class="swatch" style="background: var(--path);"></span> Path</div>
+        </div>
+        <div class="maze-display">
+            <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-label="Generated maze preview">
+                <rect width="220" height="220" fill="#ffffff"/>
+                <!-- Each cell is 20x20. 11x11 grid. Black = wall, White = path. -->
+                <!-- Row 0 (top): wall row with entrance at col 1 -->
+                <g fill="#0d1117">
+                    <rect x="0" y="0" width="20" height="20"/>
+                    <rect x="40" y="0" width="20" height="20"/>
+                    <rect x="60" y="0" width="20" height="20"/>
+                    <rect x="80" y="0" width="20" height="20"/>
+                    <rect x="100" y="0" width="20" height="20"/>
+                    <rect x="120" y="0" width="20" height="20"/>
+                    <rect x="140" y="0" width="20" height="20"/>
+                    <rect x="160" y="0" width="20" height="20"/>
+                    <rect x="180" y="0" width="20" height="20"/>
+                    <rect x="200" y="0" width="20" height="20"/>
+                    <!-- Row 1 -->
+                    <rect x="0" y="20" width="20" height="20"/>
+                    <rect x="80" y="20" width="20" height="20"/>
+                    <rect x="140" y="20" width="20" height="20"/>
+                    <rect x="200" y="20" width="20" height="20"/>
+                    <!-- Row 2 -->
+                    <rect x="0" y="40" width="20" height="20"/>
+                    <rect x="40" y="40" width="20" height="20"/>
+                    <rect x="60" y="40" width="20" height="20"/>
+                    <rect x="80" y="40" width="20" height="20"/>
+                    <rect x="100" y="40" width="20" height="20"/>
+                    <rect x="140" y="40" width="20" height="20"/>
+                    <rect x="200" y="40" width="20" height="20"/>
+                    <!-- Row 3 -->
+                    <rect x="0" y="60" width="20" height="20"/>
+                    <rect x="100" y="60" width="20" height="20"/>
+                    <rect x="140" y="60" width="20" height="20"/>
+                    <rect x="160" y="60" width="20" height="20"/>
+                    <rect x="180" y="60" width="20" height="20"/>
+                    <rect x="200" y="60" width="20" height="20"/>
+                    <!-- Row 4 -->
+                    <rect x="0" y="80" width="20" height="20"/>
+                    <rect x="20" y="80" width="20" height="20"/>
+                    <rect x="40" y="80" width="20" height="20"/>
+                    <rect x="60" y="80" width="20" height="20"/>
+                    <rect x="100" y="80" width="20" height="20"/>
+                    <rect x="200" y="80" width="20" height="20"/>
+                    <!-- Row 5 -->
+                    <rect x="0" y="100" width="20" height="20"/>
+                    <rect x="60" y="100" width="20" height="20"/>
+                    <rect x="100" y="100" width="20" height="20"/>
+                    <rect x="120" y="100" width="20" height="20"/>
+                    <rect x="140" y="100" width="20" height="20"/>
+                    <rect x="160" y="100" width="20" height="20"/>
+                    <rect x="180" y="100" width="20" height="20"/>
+                    <rect x="200" y="100" width="20" height="20"/>
+                    <!-- Row 6 -->
+                    <rect x="0" y="120" width="20" height="20"/>
+                    <rect x="60" y="120" width="20" height="20"/>
+                    <rect x="200" y="120" width="20" height="20"/>
+                    <!-- Row 7 -->
+                    <rect x="0" y="140" width="20" height="20"/>
+                    <rect x="20" y="140" width="20" height="20"/>
+                    <rect x="40" y="140" width="20" height="20"/>
+                    <rect x="60" y="140" width="20" height="20"/>
+                    <rect x="100" y="140" width="20" height="20"/>
+                    <rect x="120" y="140" width="20" height="20"/>
+                    <rect x="140" y="140" width="20" height="20"/>
+                    <rect x="160" y="140" width="20" height="20"/>
+                    <rect x="200" y="140" width="20" height="20"/>
+                    <!-- Row 8 -->
+                    <rect x="0" y="160" width="20" height="20"/>
+                    <rect x="100" y="160" width="20" height="20"/>
+                    <rect x="200" y="160" width="20" height="20"/>
+                    <!-- Row 9 -->
+                    <rect x="0" y="180" width="20" height="20"/>
+                    <rect x="20" y="180" width="20" height="20"/>
+                    <rect x="40" y="180" width="20" height="20"/>
+                    <rect x="60" y="180" width="20" height="20"/>
+                    <rect x="80" y="180" width="20" height="20"/>
+                    <rect x="100" y="180" width="20" height="20"/>
+                    <rect x="140" y="180" width="20" height="20"/>
+                    <rect x="160" y="180" width="20" height="20"/>
+                    <rect x="180" y="180" width="20" height="20"/>
+                    <rect x="200" y="180" width="20" height="20"/>
+                    <!-- Row 10 (bottom): wall row with exit at col 9 -->
+                    <rect x="0" y="200" width="20" height="20"/>
+                    <rect x="20" y="200" width="20" height="20"/>
+                    <rect x="40" y="200" width="20" height="20"/>
+                    <rect x="60" y="200" width="20" height="20"/>
+                    <rect x="80" y="200" width="20" height="20"/>
+                    <rect x="100" y="200" width="20" height="20"/>
+                    <rect x="120" y="200" width="20" height="20"/>
+                    <rect x="140" y="200" width="20" height="20"/>
+                    <rect x="160" y="200" width="20" height="20"/>
+                    <rect x="200" y="200" width="20" height="20"/>
+                </g>
+            </svg>
+        </div>
+
+        <div class="maze-display">
+            <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-label="Solved maze preview">
+                <rect width="220" height="220" fill="#ffffff"/>
+                <g fill="#0d1117">
+                    <!-- Same maze as above (walls) -->
+                    <rect x="0" y="0" width="20" height="20"/>
+                    <rect x="40" y="0" width="20" height="20"/>
+                    <rect x="60" y="0" width="20" height="20"/>
+                    <rect x="80" y="0" width="20" height="20"/>
+                    <rect x="100" y="0" width="20" height="20"/>
+                    <rect x="120" y="0" width="20" height="20"/>
+                    <rect x="140" y="0" width="20" height="20"/>
+                    <rect x="160" y="0" width="20" height="20"/>
+                    <rect x="180" y="0" width="20" height="20"/>
+                    <rect x="200" y="0" width="20" height="20"/>
+                    <rect x="0" y="20" width="20" height="20"/>
+                    <rect x="80" y="20" width="20" height="20"/>
+                    <rect x="140" y="20" width="20" height="20"/>
+                    <rect x="200" y="20" width="20" height="20"/>
+                    <rect x="0" y="40" width="20" height="20"/>
+                    <rect x="40" y="40" width="20" height="20"/>
+                    <rect x="60" y="40" width="20" height="20"/>
+                    <rect x="80" y="40" width="20" height="20"/>
+                    <rect x="100" y="40" width="20" height="20"/>
+                    <rect x="140" y="40" width="20" height="20"/>
+                    <rect x="200" y="40" width="20" height="20"/>
+                    <rect x="0" y="60" width="20" height="20"/>
+                    <rect x="100" y="60" width="20" height="20"/>
+                    <rect x="140" y="60" width="20" height="20"/>
+                    <rect x="160" y="60" width="20" height="20"/>
+                    <rect x="180" y="60" width="20" height="20"/>
+                    <rect x="200" y="60" width="20" height="20"/>
+                    <rect x="0" y="80" width="20" height="20"/>
+                    <rect x="20" y="80" width="20" height="20"/>
+                    <rect x="40" y="80" width="20" height="20"/>
+                    <rect x="60" y="80" width="20" height="20"/>
+                    <rect x="100" y="80" width="20" height="20"/>
+                    <rect x="200" y="80" width="20" height="20"/>
+                    <rect x="0" y="100" width="20" height="20"/>
+                    <rect x="60" y="100" width="20" height="20"/>
+                    <rect x="100" y="100" width="20" height="20"/>
+                    <rect x="120" y="100" width="20" height="20"/>
+                    <rect x="140" y="100" width="20" height="20"/>
+                    <rect x="160" y="100" width="20" height="20"/>
+                    <rect x="180" y="100" width="20" height="20"/>
+                    <rect x="200" y="100" width="20" height="20"/>
+                    <rect x="0" y="120" width="20" height="20"/>
+                    <rect x="60" y="120" width="20" height="20"/>
+                    <rect x="200" y="120" width="20" height="20"/>
+                    <rect x="0" y="140" width="20" height="20"/>
+                    <rect x="20" y="140" width="20" height="20"/>
+                    <rect x="40" y="140" width="20" height="20"/>
+                    <rect x="60" y="140" width="20" height="20"/>
+                    <rect x="100" y="140" width="20" height="20"/>
+                    <rect x="120" y="140" width="20" height="20"/>
+                    <rect x="140" y="140" width="20" height="20"/>
+                    <rect x="160" y="140" width="20" height="20"/>
+                    <rect x="200" y="140" width="20" height="20"/>
+                    <rect x="0" y="160" width="20" height="20"/>
+                    <rect x="100" y="160" width="20" height="20"/>
+                    <rect x="200" y="160" width="20" height="20"/>
+                    <rect x="0" y="180" width="20" height="20"/>
+                    <rect x="20" y="180" width="20" height="20"/>
+                    <rect x="40" y="180" width="20" height="20"/>
+                    <rect x="60" y="180" width="20" height="20"/>
+                    <rect x="80" y="180" width="20" height="20"/>
+                    <rect x="100" y="180" width="20" height="20"/>
+                    <rect x="140" y="180" width="20" height="20"/>
+                    <rect x="160" y="180" width="20" height="20"/>
+                    <rect x="180" y="180" width="20" height="20"/>
+                    <rect x="200" y="180" width="20" height="20"/>
+                    <rect x="0" y="200" width="20" height="20"/>
+                    <rect x="20" y="200" width="20" height="20"/>
+                    <rect x="40" y="200" width="20" height="20"/>
+                    <rect x="60" y="200" width="20" height="20"/>
+                    <rect x="80" y="200" width="20" height="20"/>
+                    <rect x="100" y="200" width="20" height="20"/>
+                    <rect x="120" y="200" width="20" height="20"/>
+                    <rect x="140" y="200" width="20" height="20"/>
+                    <rect x="160" y="200" width="20" height="20"/>
+                    <rect x="200" y="200" width="20" height="20"/>
+                </g>
+                <!-- Solution path in green -->
+                <g fill="#2ea043">
+                    <rect x="20" y="20" width="20" height="20"/>
+                    <rect x="20" y="40" width="20" height="20"/>
+                    <rect x="20" y="60" width="20" height="20"/>
+                    <rect x="40" y="60" width="20" height="20"/>
+                    <rect x="60" y="60" width="20" height="20"/>
+                    <rect x="80" y="60" width="20" height="20"/>
+                    <rect x="80" y="80" width="20" height="20"/>
+                    <rect x="80" y="100" width="20" height="20"/>
+                    <rect x="80" y="120" width="20" height="20"/>
+                    <rect x="80" y="140" width="20" height="20"/>
+                    <rect x="80" y="160" width="20" height="20"/>
+                    <rect x="120" y="160" width="20" height="20"/>
+                    <rect x="120" y="180" width="20" height="20"/>
+                    <rect x="120" y="200" width="20" height="20"/>
+                </g>
+                <!-- Start (blue) -->
+                <rect x="20" y="0" width="20" height="20" fill="#58a6ff"/>
+                <!-- End (red) -->
+                <rect x="180" y="200" width="20" height="20" fill="#f85149"/>
+            </svg>
+        </div>
+        <div>
+            <h3>Solve</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
+                Paste any maze in any character set. The solver finds a path from start to end using depth-first search.
+            </p>
+            <div class="label"><span class="swatch" style="background: var(--start);"></span> Start</div>
+            <div class="label"><span class="swatch" style="background: var(--solution);"></span> Solution path</div>
+            <div class="label"><span class="swatch" style="background: var(--end);"></span> End</div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <section class="features">
+        <div class="feature">
+            <div class="icon">🔀</div>
+            <h3>Random Generation</h3>
+            <p>Recursive backtracking algorithm — every maze is unique. Set any width and height.</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🧩</div>
+            <h3>Custom Solver</h3>
+            <p>Bring your own maze. Pick any characters for walls, paths, start, end, and the highlighted solution.</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🖼️</div>
+            <h3>Export to PNG</h3>
+            <p>One-click save dialog. Get a clean color-coded image of the maze or solution.</p>
+        </div>
+    </section>
+</div>
+
+<section class="info">
+    <div class="container">
+        <h2>Install &amp; Run</h2>
+        <p class="lead">Pick whichever method fits your style.</p>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Installer (recommended)</h3>
+                <ol>
+                    <li>Click <strong>Download for Windows</strong> above</li>
+                    <li>Run <code>MazeProgram-1.0.0.exe</code></li>
+                    <li>Walk through the Setup wizard</li>
+                    <li>Launch from the Start menu — done</li>
+                </ol>
+            </div>
+            <div class="info-card">
+                <h3>Portable ZIP</h3>
+                <ol>
+                    <li>Download <strong>Portable ZIP</strong> above</li>
+                    <li>Right-click the .zip → <em>Extract All</em></li>
+                    <li>Open the extracted folder</li>
+                    <li>Double-click <code>MazeProgram.exe</code></li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Heads up:</strong> Windows may show <em>&ldquo;Windows protected your PC&rdquo;</em> on first launch. This appears for any unsigned executable. Click <strong>More info</strong> → <strong>Run anyway</strong> to continue.
+        </div>
+    </div>
+</section>
+
+<section class="info">
+    <div class="container">
+        <h2>About</h2>
+        <p class="lead">Built as an AP Computer Science A final project.</p>
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>What's under the hood</h3>
+                <ul>
+                    <li>Written in <strong>Java</strong> (4 classes, ~350 LOC)</li>
+                    <li>Maze generation: <strong>recursive backtracking</strong> (DFS)</li>
+                    <li>Maze solving: <strong>depth-first search</strong> with path marking</li>
+                    <li>Image rendering: <strong>java.awt.image.BufferedImage</strong></li>
+                    <li>Native file dialogs: <strong>java.awt.FileDialog</strong></li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <h3>What's bundled</h3>
+                <ul>
+                    <li>Native Windows launcher (<code>jpackage</code>)</li>
+                    <li>Slim custom JRE (<code>jlink</code>) — no Java install required</li>
+                    <li>5 modules from JDK 25: <code>java.base</code>, <code>java.desktop</code>, and dependencies</li>
+                    <li>Installer built with WiX Toolset</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p>Built by <a href="https://github.com/vivaandudeja" target="_blank" rel="noopener">vivaandudeja</a> &middot; AP CSA Project &middot; <a href="https://github.com/vivaandudeja/maze-program-apcsa-project" target="_blank" rel="noopener">Source on GitHub</a></p>
+    </div>
+</footer>
+
+</body>
+</html>
