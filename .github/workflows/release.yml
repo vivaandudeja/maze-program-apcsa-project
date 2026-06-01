@@ -1,0 +1,119 @@
+name: Build & Release (Windows x64)
+
+# Triggers:
+#   - Push a tag like v1.0.0 -> builds x64 .exe + portable zip, attaches to Release
+#   - Manual run from Actions tab -> builds artifacts without releasing
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to create/update Releases
+
+jobs:
+  build:
+    runs-on: windows-latest   # GitHub-hosted x64 Windows runner
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (x64)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          architecture: 'x64'
+
+      - name: Verify toolchain
+        run: |
+          java -version
+          javac -version
+          jpackage --version
+          # WiX 3.x is pre-installed on windows-latest runners
+          where light.exe
+
+      - name: Compile Java sources
+        run: javac *.java
+
+      - name: Build JAR
+        run: jar cfe MazeProgram.jar MazeRunner *.class
+
+      - name: Build slim runtime with jlink
+        shell: pwsh
+        run: |
+          jlink `
+            --module-path "$env:JAVA_HOME\jmods" `
+            --add-modules java.base,java.datatransfer,java.xml,java.prefs,java.desktop `
+            --strip-debug --no-man-pages --no-header-files --compress=2 `
+            --output myRuntime
+
+      - name: Stage input for jpackage
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path build-input -Force | Out-Null
+          Copy-Item MazeProgram.jar build-input\
+
+      - name: Build .exe installer (jpackage + WiX)
+        shell: pwsh
+        run: |
+          jpackage `
+            --type exe `
+            --name MazeProgram `
+            --app-version 1.0.0 `
+            --vendor "Vivaan" `
+            --description "Maze generator and solver - AP CSA project" `
+            --input build-input `
+            --main-jar MazeProgram.jar `
+            --main-class MazeRunner `
+            --runtime-image myRuntime `
+            --win-console `
+            --win-shortcut `
+            --win-menu `
+            --win-menu-group "MazeProgram" `
+            --win-dir-chooser `
+            --win-per-user-install `
+            --dest dist
+
+      - name: Build portable app-image
+        shell: pwsh
+        run: |
+          jpackage `
+            --type app-image `
+            --name MazeProgram `
+            --app-version 1.0.0 `
+            --vendor "Vivaan" `
+            --input build-input `
+            --main-jar MazeProgram.jar `
+            --main-class MazeRunner `
+            --runtime-image myRuntime `
+            --win-console `
+            --dest dist-portable
+          Compress-Archive `
+            -Path dist-portable\MazeProgram `
+            -DestinationPath dist\MazeProgram-portable.zip
+
+      - name: List build artifacts
+        shell: pwsh
+        run: Get-ChildItem dist
+
+      - name: Upload artifacts (always, even on manual runs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MazeProgram-Windows-x64
+          path: |
+            dist/MazeProgram-1.0.0.exe
+            dist/MazeProgram-portable.zip
+          if-no-files-found: error
+
+      - name: Attach artifacts to GitHub Release (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/MazeProgram-1.0.0.exe
+            dist/MazeProgram-portable.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
