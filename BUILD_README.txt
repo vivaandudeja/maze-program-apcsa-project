@@ -1,59 +1,66 @@
 MazeProgram - Build Instructions
 =================================
 
-This folder contains two build scripts:
+Two ways to build this project, depending on what you need:
 
-  build.bat            -> Portable folder (no install, no WiX needed)
-  build-installer.bat  -> Real Windows .exe installer (needs WiX)
-
-Pick whichever fits how you want to share the app.
+  build-installer.bat                     -> Local build (for testing on your own PC)
+  .github/workflows/release.yml           -> Cloud build (for the public x64 download)
 
 ------------------------------------------------------------
-OPTION 1: PORTABLE FOLDER (recommended for quick sharing)
+CLOUD BUILD (for the public download on the website)
 ------------------------------------------------------------
 
-  1. Double-click build.bat
-  2. Wait ~30 seconds
-  3. Output: dist\MazeProgram\MazeProgram.exe
-  4. To share: zip the dist\MazeProgram folder and send it.
-     Recipient unzips and runs MazeProgram.exe - no install.
+The GitHub Pages site downloads the .exe from GitHub Releases.
+Those release files are built automatically in the cloud whenever
+you push a version tag - no need to run anything locally.
 
-Pros: no WiX needed, no install on recipient's machine,
-      runs from anywhere (USB stick, Desktop, Downloads).
-Cons: bigger to send (~40 MB zipped), no Start menu entry.
+To publish a new public release:
 
-------------------------------------------------------------
-OPTION 2: REAL .EXE INSTALLER (for a polished release)
-------------------------------------------------------------
+  git tag v1.0.0
+  git push origin v1.0.0
 
-  1. Install WiX Toolset (one-time setup - see below)
-  2. Double-click build-installer.bat
-  3. Wait 1-2 minutes
-  4. Output: dist\MazeProgram-1.0.0.exe (a single installer file)
-  5. To share: send that one .exe file.
-     Recipient double-clicks it, walks through Setup wizard,
-     gets a Start menu shortcut and an entry in Add/Remove Programs.
+That triggers .github/workflows/release.yml on a free x64 Windows
+runner. It compiles, jlinks, jpackages, and uploads:
+  - MazeProgram-1.0.0.exe       (installer)
+  - MazeProgram-portable.zip    (portable folder)
+straight into the matching GitHub Release.
 
-Pros: single file to share, proper Windows install experience,
-      Start menu shortcut, clean uninstall via Settings > Apps.
-Cons: requires installing WiX once on YOUR machine,
-      recipient has to "install" before running.
+Watch the build at:
+  https://github.com/vivaandudeja/maze-program-apcsa-project/actions
+
+Why cloud? jpackage produces builds for whatever CPU it runs on,
+so building locally on an ARM PC would produce an ARM-only .exe
+that wouldn't work on most users' machines. The cloud runner is
+x64 and works for everyone.
 
 ------------------------------------------------------------
-ONE-TIME WIX TOOLSET SETUP (for build-installer.bat only)
+LOCAL BUILD (for testing on your own PC)
 ------------------------------------------------------------
 
-WiX is the open-source tool that jpackage uses behind the scenes
-to actually build .exe / .msi installer files. You only need to
-install it on YOUR machine - the recipients of your installer
-do NOT need WiX.
+  1. Double-click build-installer.bat (or run from terminal)
+  2. Wait 1-2 minutes
+  3. Output: dist\MazeProgram-1.0.0.exe (a single installer file)
+  4. Double-click to install on your machine
+
+This is useful for quickly testing changes before pushing a tag.
+The locally-built .exe will be for YOUR architecture only - don't
+share it. For public distribution, use the cloud build above.
+
+------------------------------------------------------------
+ONE-TIME WIX TOOLSET SETUP (local builds only)
+------------------------------------------------------------
+
+WiX is the tool jpackage uses behind the scenes to build the
+.exe installer. The cloud runner has it pre-installed, but for
+local builds you need to install it once on your machine.
+
+(Recipients of your installer do NOT need WiX.)
 
 Steps:
 
   1. Go to: https://github.com/wixtoolset/wix3/releases
-  2. Download the latest WiX 3.x installer (NOT 4.x - jpackage
-     does not support WiX 4 yet). The file is named like:
-       wix311.exe
+  2. Download wix311.exe (use WiX 3.x, NOT 4.x - jpackage does
+     not support WiX 4 yet).
   3. Run wix311.exe and follow the installer.
   4. Add the WiX bin folder to your PATH:
        a. Press Windows key, type "environment variables", open
@@ -63,56 +70,36 @@ Steps:
        d. Click "New" and add:
             C:\Program Files (x86)\WiX Toolset v3.11\bin
        e. Click OK on all dialogs
-  5. Open a NEW terminal (existing terminals won't see the
-     updated PATH) and verify:
+  5. Open a NEW terminal and verify:
        light --version
-     You should see a version number. If "not recognized", the
-     PATH update didn't take effect - try logging out and back in.
-
-Once that's done, build-installer.bat will work.
+     You should see a version number.
 
 ------------------------------------------------------------
-WHAT EACH BUILD PRODUCES
-------------------------------------------------------------
-
-build.bat output:
-  dist\
-  └── MazeProgram\
-      ├── MazeProgram.exe       <- launcher, double-click to run
-      ├── app\
-      │   └── MazeProgram.jar
-      └── runtime\              <- bundled JRE
-
-build-installer.bat output:
-  dist\
-  └── MazeProgram-1.0.0.exe     <- single installer file
-                                   (run once to install the app
-                                    into Program Files [per-user])
-
-Both share the same JAR and runtime - the only difference is
-how they're packaged for delivery.
-
-------------------------------------------------------------
-REQUIREMENTS (both scripts)
+REQUIREMENTS (local builds only)
 ------------------------------------------------------------
 
   - JDK 14 or newer installed (you have JDK 25 - good)
   - jpackage on PATH (ships with the JDK)
+  - WiX Toolset 3.x on PATH (see above)
   - MazeProgram.jar in this folder
   - myRuntime\ folder in this folder
 
 To verify: open a new terminal and run
   jpackage --version
+  light --version
 
 ------------------------------------------------------------
 REBUILDING THE JAR (only if you change .java files)
 ------------------------------------------------------------
 
 If you edit any .java file, recompile and re-jar before running
-either build script:
+build-installer.bat:
 
   javac *.java
   jar cfe MazeProgram.jar MazeRunner *.class
+
+(The cloud workflow does this automatically - only needed for
+local builds.)
 
 ------------------------------------------------------------
 TROUBLESHOOTING
@@ -122,7 +109,7 @@ TROUBLESHOOTING
     -> Install a JDK 14+ and add its bin folder to PATH.
        Open a new terminal after updating PATH.
 
-"WiX toolset not found" (only for build-installer.bat)
+"WiX toolset not found"
     -> See the WiX setup section above. Make sure you opened
        a new terminal after editing PATH.
 
@@ -130,19 +117,18 @@ TROUBLESHOOTING
     -> jpackage requires WiX 3.x. WiX 4.x is NOT supported.
        Uninstall WiX 4 and install wix311.exe.
 
-"App-image fails: runtime image is not valid"
+"Runtime image is not valid"
     -> Your myRuntime folder may be incomplete. Regenerate it:
        jlink --module-path "%JAVA_HOME%\jmods" ^
              --add-modules java.base,java.datatransfer,java.xml,java.prefs,java.desktop ^
              --output myRuntime
 
-Installer install fails with permissions error
-    -> The script uses --win-per-user-install (no admin needed).
-       If you removed that flag, the installer will need admin
-       rights to write to Program Files.
+Recipient gets "Windows protected your PC" warning
+    -> Normal for unsigned .exe files. Click "More info" then
+       "Run anyway". Removing the warning requires a code-signing
+       certificate (~$100/year), not worth it for a school project.
 
-Recipient gets "Windows protected your PC" warning when running
-    -> Unsigned .exe files always trigger this. Click "More info"
-       then "Run anyway". To remove the warning entirely you'd
-       need a code-signing certificate (~$100/year), not worth
-       it for a school project.
+Recipient gets "This app can't run on your PC"
+    -> Architecture mismatch. They're on a different CPU than
+       what you built for. Push a tag to trigger the cloud build,
+       which produces an x64 .exe that works on most PCs.
